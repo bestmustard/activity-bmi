@@ -4,6 +4,7 @@
 
 This repository contains a study on how an individual's amount of exercise conducted per week and their income level impacts their probability of being obese.
 
+This study is entirely reproducible, while the data set can be found under inputs/data/raw_data, the data can also be directly downloaded at the link below. All the scripts for simulation and creating the model can be found under scripts.
 
 ## File Structure
 
