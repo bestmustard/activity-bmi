@@ -1,11 +1,9 @@
 #### Preamble ####
-# Purpose: Models... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 11 February 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Creates a logistic regression model
+# Author: Victor Ma
+# Date: 19 Apr 2024
+# Contact: victo.ma@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
 
 
 #### Workspace setup ####
@@ -13,25 +11,25 @@ library(tidyverse)
 library(rstanarm)
 
 #### Read data ####
-analysis_data <- read_csv("data/analysis_data/analysis_data.csv")
-
+activity_data <- read_csv("inputs/data/analysis_data/analysis_data.csv")
+activity_data$obese <- as_factor(activity_data$obese)
 ### Model data ####
-first_model <-
-  stan_glm(
-    formula = flying_time ~ length + width,
-    data = analysis_data,
-    family = gaussian(),
-    prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_intercept = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_aux = exponential(rate = 1, autoscale = TRUE),
-    seed = 853
-  )
+set.seed(853)
+
+# Reducing the dataset for manageable computation
+activity_data_reduced <- activity_data |> 
+  slice_sample(n = 3000)
 
 
-#### Save model ####
-saveRDS(
-  first_model,
-  file = "models/first_model.rds"
+# Specifying the logistic regression model
+obesity_likelihood <- stan_glm(
+  obese ~ activity + income,
+  data = activity_data_reduced,
+  family = binomial(link = "logit"),
+  prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
+  prior_intercept = normal(location = 0, scale = 2.5, autoscale = TRUE),
+  seed = 853
 )
 
-
+# Saving and loading the model for future analysis
+saveRDS(obesity_likelihood, file = "models/obesity_likelihood.rds")
