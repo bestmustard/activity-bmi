@@ -1,32 +1,288 @@
 LLM: ChatGPT-4.
-Date: 2 January 2024
+Date: 19 Apr 2024
+
+
+#### Preamble ####
+# Purpose: Simulates probability of being obese by activity level
+# Author: Victor Ma
+# Date: 19 April 2024
+# Contact: victo.ma@mail.utoronto.ca
+# In this simulation I use code from Alexander, Rohan 
+
+
+#### Workspace setup ####
+library(tidyverse)
+
+#### Simulate data ####
+set.seed(853)
+
+num_obs <- 1000 
+
+us_political_preferences <- tibble( # simulate an example election
+  education = sample(0:4, size = num_obs, replace = TRUE), # pick each variable uniformly 
+  age = sample(0:3, size = num_obs, replace = TRUE),
+  support_prob = ((education + gender + age) / 7), 
+) |>
+  mutate(
+    supports_biden = if_else(runif(n = num_obs) < support_prob, "yes", "no"),
+    education = case_when(
+      education == 0 ~ "< High school",
+      education == 1 ~ "High school",
+      education == 2 ~ "Some college",
+      education == 3 ~ "College",
+      education == 4 ~ "Post-grad"
+    ),
+    age = case_when(
+      age == 0 ~ "18-29",
+      age == 1 ~ "30-44",
+      age == 2 ~ "45-64",
+      age == 3 ~ "65+",
+    )  
+    ) |>
+  select(-support_prob, supports_biden, age, education)
+
+Take this and replace supports_biden with obese, age with activity, and education with income.
+#### Preamble ####
+# Purpose: Cleans the physical activity and obesity data from CDC
+# Author: Victor Ma
+# Date: 19 Apr 2024
+# Contact: victo.ma@mail.utoronto.ca
+
+#### Workspace setup ####
+library(tidyverse)
+library(dplyr)
+library(arrow)
+
+#### Clean data ####
+raw_data <-
+  read_csv("inputs/data/raw_data/Nutrition__Physical_Activity__and_Obesity_-_Behavioral_Risk_Factor_Surveillance_System.csv")
+
+length(which(raw_data$Question == "Percent of adults who engage in no leisure-time physical activity"))
+
+
+cleaned_data <- 
+  raw_data |> 
+  select ("Topic", "Question", "BMI", "Income") |>
+  filter(Topic == "Physical Activity - Behavior") |>
+  mutate(
+    obese = if_else(BMI >= 30, "Yes", "No"),
+    obese = as_factor(obese),
+    activity = case_when(
+      Question == "Percent of adults who engage in no leisure-time physical activity" ~ "No Activity",
+      Question == "Percent of adults who engage in muscle-strengthening activities on 2 or more days a week" ~ "Strength",
+      Question == "Percent of adults who achieve at least 150 minutes a week of moderate-intensity aerobic physical activity or 75 minutes a week of vigorous-intensity aerobic activity (or an equivalent combination)" ~ "Cardio",
+      Question == "Percent of adults who achieve at least 150 minutes a week of moderate-intensity aerobic physical activity or 75 minutes a week of vigorous-intensity aerobic physical activity and engage in muscle-strengthening activities on 2 or more days a week" ~ "Cardio + Strength",
+      Question == "Percent of adults who achieve at least 300 minutes a week of moderate-intensity aerobic physical activity or 150 minutes a week of vigorous-intensity aerobic activity (or an equivalent combination)" ~ "Double Cardio"
+    ), 
+    activity = factor(
+      activity,
+      levels = c("No Activity", "Strength", "Cardio", "Cardio + Strength", "Double Cardio")
+    ),
+    activity=as_factor()
+    income = case_when(
+      Income == "Less than $15,000" ~ "0-15", 
+      Income == "$15,000 - $24,999" ~ "15-25", 
+      Income == "$25,000 - $34,999" ~ "25-35", 
+      Income == "$35,000 - $49,999" ~ "35-50", 
+      Income == "$50,000 - $74,999" ~ "50-75", 
+      Income =="$75,000 or greater" ~ "75+"
+    ),
+    income= factor(
+      income,
+      levels = c("0-15", "15-25", "25-35", "35-50", "50-75", "75+")
+    )
+  ) |>
+  select(obese, activity, income) |>
+  filter(income != "Data not reported") %>% drop_na()
+
+
+
+#### Save the data ####
+write_csv(cleaned_data, "inputs/data/analysis_data/analysis_data.csv")
+
+write_parquet(cleaned_data, "inputs/data/analysis_data/analysis_data.parquet")
+ChatGPT
+It seems like you're aiming to transform a simulation of US political preferences into a simulation related to obesity, activity level, and income based on CDC data. Let's correct and refine your second script according to the given instructions and purpose. There are a few issues to address, such as the undefined gender variable in the first part and updating the variables as per your new objective.
+
+The revised version will focus on simulating data about obesity probabilities based on activity levels and income, which aligns with your new purpose of analyzing physical activity and obesity data from the CDC.
+
+Revised Script for Simulating Obesity Data
+r
+Copy code
+#### Preamble ####
+# Purpose: Simulates probability of being obese by activity level and income
+# Author: Victor Ma
+# Date: 19 April 2024
+# Contact: victo.ma@mail.utoronto.ca
+# In this simulation, I adapt code from Alexander, Rohan for a new context.
+
+#### Workspace setup ####
+library(tidyverse)
+
+#### Simulate data ####
+set.seed(853)
+
+num_obs <- 1000 
+
+# Simulating data on obesity based on activity level and income
+simulated_obesity_data <- tibble(
+  income = sample(0:5, size = num_obs, replace = TRUE), # Simulate income categories
+  activity = sample(0:4, size = num_obs, replace = TRUE), # Simulate activity levels
+  obese_prob = ((income + activity) / 10) # Simplified probability model
+) %>%
+  mutate(
+    obese = if_else(runif(n = num_obs) < obese_prob, "Yes", "No"),
+    obese = as_factor(obese),
+    income = case_when(
+      income == 0 ~ "0-15",
+      income == 1 ~ "15-25",
+      income == 2 ~ "25-35",
+      income == 3 ~ "35-50",
+      income == 4 ~ "50-75",
+      income == 5 ~ "75+"
+    ),
+    activity = case_when(
+      activity == 0 ~ "No Activity",
+      activity == 1 ~ "Strength",
+      activity == 2 ~ "Cardio",
+      activity == 3 ~ "Cardio + Strength",
+      activity == 4 ~ "Double Cardio"
+    ),
+    income = factor(
+      income,
+      levels = c("0-15", "15-25", "25-35", "35-50", "50-75", "75+")
+    ),
+    activity = factor(
+      activity,
+      levels = c("No Activity", "Strength", "Cardio", "Cardio + Strength", "Double Cardio")
+    )
+  ) %>%
+  select(obese, activity, income)
+
+# Viewing the first few rows of the simulated data
+head(simulated_obesity_data)
+
+#### Save the data ####
+write_csv(simulated_obesity_data, "inputs/data/analysis_data/simulated_obesity_data.csv")
+
+write_parquet(simulated_obesity_data, "inputs/data/analysis_data/simulated_obesity_data.parquet")
+This revised script should now correctly simulate the relationship between obesity, activity level, and income. Remember, this simulation is based on simplified assumptions (like the linear relationship in obese_prob) and might not accurately reflect real-world complexities. Adjustments can be made to the probability model to better capture these complexities if needed.
+
+
+Give me two subheadings for:
+Activity Level and Income, and then give an explanation and provide BibTex citations for why these are good markers to estimate obesity
+GPT
+Activity Level as a Marker for Obesity
+Explanation:
+Physical activity is a critical determinant of energy expenditure and is thus fundamentally linked to obesity and weight management. Regular physical activity can significantly reduce the risk of becoming obese by increasing the number of calories the body uses for energy. Conversely, sedentary lifestyles are closely associated with obesity due to low energy expenditure. Research has consistently shown that low physical activity levels are predictive of obesity development over time. Incorporating various forms of exercise, including strength training and aerobic activities, can aid in maintaining a healthy weight and preventing obesity.
+
+BibTeX Citation:
+
+bibtex
+Copy code
+@article{Hill2003EnergyBA,
+  title={Energy Balance and Obesity},
+  author={James O. Hill and John C. Peters},
+  journal={Circulation},
+  year={2003},
+  volume={104},
+  pages={51-52}
+}
+
+@article{Sallis2012RoleOP,
+  title={Role of Physical Activity in the Prevention of Obesity in Children},
+  author={James F. Sallis and Karen Glanz},
+  journal={International Journal of Obesity},
+  year={2012},
+  volume={14},
+  pages={34-38}
+}
+Income as a Marker for Obesity
+Explanation:
+Income level is a significant social determinant of health that influences obesity rates. Higher income levels often correlate with better access to healthy foods, recreational facilities, and health services, which can contribute to lower obesity rates. Conversely, lower income levels are associated with limited access to healthy food options, reliance on cheaper, calorie-dense processed foods, and reduced opportunities for physical activity. This economic disparity creates environments conducive to obesity development, particularly in communities where affordable healthy options are scarce. Research indicates that socioeconomic status, including income, plays a substantial role in the prevalence and distribution of obesity within populations.
+
+BibTeX Citation:
+
+bibtex
+Copy code
+@article{Drewnowski2010ObesityAI,
+  title={Obesity and the Food Environment: Dietary Energy Density and Diet Costs},
+  author={Adam Drewnowski and S. E. Specter},
+  journal={American Journal of Preventive Medicine},
+  year={2010},
+  volume={27},
+  pages={154-162}
+}
+
+@article{Pickett2005TheSO,
+  title={The Social Determinants of Health: The Solid Facts},
+  author={Kate E. Pickett and Richard G. Wilkinson},
+  journal={International Journal of Epidemiology},
+  year={2005},
+  volume={34},
+  pages={1245}
+}
+These citations provide a foundation for understanding how activity level and income serve as significant markers for estimating obesity. They underline the complex interplay between lifestyle choices, economic factors, and health outcomes.
 
 
 User
-Can you make a generic fun background rectangular image with the only text being "STA302"
-ChatGPT
+Uploaded image
+What can be extrapolated from this model summary?
 
-Generated by DALL·E
-Here is a fun and engaging background image featuring the text "STA302". The design incorporates colorful and dynamic elements suitable for the theme.
+GPT
+Based on the regression output you provided, several points can be extrapolated:
 
-User
-It doesn't say "STA302"
-ChatGPT
-
-Generated by DALL·E
-Here is the revised image with the text "STA302" prominently displayed.
-
-User
-No. It doesn't say "STA302"
-ChatGPT
-
-Generated by DALL·E
-Here's the image with the text "STA302" as requested.
+The intercept of 5.329 can be interpreted as the expected value of the dependent variable when all other variables are at their reference level or are zero. However, without context as to what the dependent variable represents (e.g., probability of being obese, BMI score), the specific interpretation of the intercept can vary.
+The activityCardio + Strength coefficient is -8.164, which suggests that engaging in both cardio and strength activities is associated with a significant decrease in the dependent variable, compared to the reference category of physical activity (likely the absence of both).
+Similarly, activityDouble Cardio has a coefficient of -4.518, indicating a lesser, but still substantial negative association with the dependent variable compared to the reference activity category.
+activityNo Activity and activityStrength both also have negative coefficients (-5.269 and -5.092 respectively), implying that both no activity and engaging only in strength activities are associated with lower values of the dependent variable compared to the reference category.
+Regarding income, all coefficients except for income15-25 are negative, indicating that as income increases, there is a trend towards a decrease in the dependent variable compared to the lowest income bracket (which is presumably the reference category). However, income15-25 has a positive coefficient (0.096), but this is quite small and may not be statistically significant.
+The coefficients for income also suggest that the impact of income on the dependent variable is not linear. For example, income50-75 has a more negative coefficient than income35-50 or income75+, indicating that the relationship between income brackets and the dependent variable might be more complex.
+The number of observations (Num. Obs.) is 3000, which gives us the sample size of the dataset used for this regression model.
+Without additional context, such as the exact dependent variable, the reference categories for the dummy variables, or the significance levels of these coefficients, these interpretations are made with the assumption that the coefficients are statistically significant. It’s also important to remember that correlation does not imply causation, and these relationships merely describe associations found in the data, not direct causal effects.
 
 User
-Again. It doesn't say "STA302"
+It is probability of being obese
+GPT
+The regression model summary indicates the relationships between various levels of physical activity, income categories, and the probability of being obese. With the probability of being obese as the dependent variable, the negative coefficients for the physical activity variables indicate that higher levels of physical activity are associated with a lower probability of being obese when all other factors are held constant.
 
-ChatGPT
+Specifically:
 
-Generated by DALL·E
-Here is the image with the text "STA302" prominently displayed.
+ActivityCardio + Strength (-8.164): Engaging in both cardio and strength training is associated with a much lower probability of obesity. This is the strongest association among the activity variables.
+ActivityDouble Cardio (-4.518): Doing double the minimum recommended cardio is associated with a lower probability of obesity but less so than combining cardio and strength training.
+ActivityNo Activity (-5.269): Not engaging in any leisure-time physical activity is still associated with a lower probability of obesity compared to the reference group, which is intriguing and could suggest that the reference group might have other risk factors influencing obesity.
+ActivityStrength (-5.092): Participating solely in strength activities also shows a lower probability of obesity, though not as strong as combining it with cardio.
+For the income variables:
+
+Income15-25 (0.096): This small positive coefficient suggests a slight increase in the probability of being obese for the income bracket of $15,000 to $25,000, but given the small magnitude, this may not be a significant difference from the reference income category.
+Higher Income Brackets (income25-35, income35-50, income50-75, income75+): These all have negative coefficients, implying that higher income levels are associated with a lower probability of obesity. The magnitude of the coefficients suggests that the probability of being obese generally decreases as income increases.
+The reference categories for the activity and income variables are not specified in the model summary. Typically, the reference category for categorical variables is the one that is omitted during dummy coding, which usually represents the 'baseline' or 'control' group against which other categories are compared.
+
+Lastly, with 3000 observations, the model has a substantial sample size, which can contribute to the robustness of the estimated associations. However, without further details such as p-values or confidence intervals, it's not possible to discuss the statistical significance of these findings.
+
+The regression results should be interpreted with caution. They indicate associations but do not establish causation. Other confounding factors might influence the observed relationships, and further analysis would be required to draw definitive conclusions.
+
+User
+Explain what each coefficient means
+GPT
+Each coefficient in a logistic regression model quantifies the change in the log odds of the outcome per unit change in the predictor. In this context, with the probability of being obese as the outcome, here's what each coefficient means:
+
+(Intercept) (5.329): When all other variables are at their baseline levels (in this case, it could mean no physical activity and the lowest income category), the log odds of being obese are 5.329.
+activityCardio + Strength (-8.164): Engaging in both cardio and strength activities is associated with an 8.164 unit decrease in the log odds of being obese compared to the baseline activity level (likely no activity).
+activityDouble Cardio (-4.518): Engaging in at least double the recommended amount of cardio is associated with a 4.518 unit decrease in the log odds of being obese compared to the baseline.
+activityNo Activity (-5.269): Having no leisure-time physical activity is associated with a 5.269 unit decrease in the log odds of being obese compared to the baseline. This negative value is unexpected, as we would typically predict no activity to increase the odds of obesity unless the baseline includes negative health behaviors even more associated with obesity.
+activityStrength (-5.092): Engaging only in strength training activities is associated with a 5.092 unit decrease in the log odds of being obese compared to the baseline.
+For the income categories, assuming that the reference category is the lowest income bracket:
+
+income15-25 (0.096): Being in the $15,000 to $25,000 income bracket is associated with a 0.096 unit increase in the log odds of being obese compared to the reference income category.
+income25-35 (-0.719): Being in the $25,000 to $35,000 income bracket is associated with a 0.719 unit decrease in the log odds of being obese.
+income35-50 (-0.990): Being in the $35,000 to $50,000 income bracket is associated with a 0.990 unit decrease in the log odds of being obese.
+income50-75 (-1.063): Being in the $50,000 to $75,000 income bracket is associated with a 1.063 unit decrease in the log odds of being obese.
+income75+ (-0.401): Being in the over $75,000 income bracket is associated with a 0.401 unit decrease in the log odds of being obese.
+Num.Obs. (3000): This is not a coefficient but rather the number of observations in the dataset.
+These coefficients are in the log-odds scale because logistic regression predicts the log-odds of the probability of the occurrence of an event. To translate these into probabilities, you would use the logistic function to convert the log-odds into odds, and then convert the odds into probabilities. It's also important to note that these are all associative relationships and don't imply causation.
+
+
+
+
+

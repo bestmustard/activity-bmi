@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Cleans the raw 2020 CCES data recorded by Schaffner, Brian et.al 
+# Purpose: Cleans the physical activity and obesity data from CDC
 # Author: Victor Ma
 # Date: 19 Apr 2024
 # Contact: victo.ma@mail.utoronto.ca
@@ -13,8 +13,7 @@ library(arrow)
 raw_data <-
   read_csv("inputs/data/raw_data/Nutrition__Physical_Activity__and_Obesity_-_Behavioral_Risk_Factor_Surveillance_System.csv")
 
-length(which(raw_data$Question == "Percent of adults who engage in no leisure-time physical activity"))
-
+unique(raw_data$Topic)
 
 cleaned_data <- 
   raw_data |> 

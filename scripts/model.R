@@ -13,6 +13,10 @@ library(rstanarm)
 #### Read data ####
 activity_data <- read_csv("inputs/data/analysis_data/analysis_data.csv")
 activity_data$obese <- as_factor(activity_data$obese)
+activity_data$activity = factor(
+  activity_data$activity,
+  levels = c("No Activity", "Strength", "Cardio", "Cardio + Strength", "Double Cardio")
+)
 ### Model data ####
 set.seed(853)
 
