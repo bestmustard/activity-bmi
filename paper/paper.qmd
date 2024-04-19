@@ -1,12 +1,12 @@
 ---
-title: "Physical activity is as tied to obesity as we expect it to be"
-subtitle: "An analysis of American exerise habits and their BMI"
+title: "Americans who are wealthier and perform more strength training are less likely to be obese"
+subtitle: "An analysis of how exercise habits and wealth correlate with BMI"
 author: 
   - Victor Ma
 thanks: "Code and data are available at: https://github.com/bestmustard/activity-bmi"
 date: 03/16/2024
 date-format: long
-abstract: ""
+abstract: "This study examines the correlation between an individual's weekly physical activity, their income level, and their probability of being obese. The only correlation found between physical activity was with individuals who strength train having lower rates of obesity, and higher income levels tended to trend with lower obesity. The findings from this study can help researchers understand the mechanisms that drive weight loss, and also shows individuals that nutrition is a greater factor than exercise with respect to body composition."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -25,7 +25,6 @@ header-includes:
 #| message: false
 
 library(tidyverse)
-library(dataverse)
 library(knitr)
 library(modelsummary)
 library(rstanarm)
@@ -53,24 +52,21 @@ The data I am using is from the Center of Disease Control and Prevention (CDC), 
 
 My report is structured into four main sections following the introduction. In the first section, I describe the data utilized for my analysis, presenting the CDC dataset as well as graphs that show the distribution of the explanatory variables. The second section details the logistic regression model, including the rationale for its use and an interpretation of preliminary findings. Next I will analyse the variables' impact on obesity prevalence through the use of graphs and specific numerics from my results. Finally, I discuss the implications of my findings, address potential weaknesses in my study, and suggest directions for future research. 
 
-This analysis is conducted using R, using several R packages to facilitate my analysis and presentation. This includes tidyverse for data manipulation and visualization, knitr for report generation, modelsummary for model interpretation, and rstanarm for Bayesian regression modeling [@citeR; @Dataverse; @Knitr; @Modelsummary; @Rstanarm; @Tidybayes; @Dplyr]. Some portions including ggplot graphs and the "Discussion" section were written with the help of ChatGPT4 @chatgpt. 
+This analysis is conducted using R, using several R packages to facilitate my analysis and presentation. This includes tidyverse for data manipulation and visualization, knitr for report generation, modelsummary for model interpretation, and rstanarm for Bayesian regression modeling [@citeR; @Knitr; @Modelsummary; @Rstanarm; @Tidybayes; @Dplyr]. Some portions including ggplot graphs and the "Data" and "Discussion" sections were written with the help of ChatGPT4 @chatgpt. 
+
 \newpage
 
 # Data
 
 I used a dataset called "Nutrition, Physical Activity, and Obesity - Behavioral Risk Factor Surveillance System" pulled directly from the CDC website [@dataset]. The .csv file obtained from the website contains 93250 data points with the relevant information of an individual's activity level based on their survey response, BMI, and various demographics. The dataset is owned by the Division of Nutrition, Physical Activity, Obesity (DNPAO), a division under the CDC which focuses directly on preventing chronic diseases by promoting better nutrition practices. 
 
-## Source Reliability
-
-The Centers for Disease Control and Prevention (CDC) is recognized as a reliable source for obesity data for several reasons. The CDC's Division of Nutrition, Physical Activity, and Obesity conducts comprehensive surveillance and research to understand and address obesity, focusing on policy and environmental strategies to promote healthy eating and active living. The organization collects data from the largest scale health survey systems in the United States, including both the Behavioral Risk Factor Surveillance System (BRFSS) and the National Health and Nutrition Examination Survey (NHANES) [@cdcdata; @cdcinitiatives].
-
-The BRFSS conducts more than 400,000 interviews annually across the United States, offering state-level estimates of obesity prevalence among other health parameters. The large sample size it offers provides a better understanding of the population when compared to smaller samples [@brfss].
+The CDC's Division of Nutrition, Physical Activity, and Obesity conducts comprehensive surveillance and research to understand and address obesity, focusing on policy and environmental strategies to promote healthy eating and active living. The organization collects data from the largest scale health survey systems in the United States, including both the Behavioral Risk Factor Surveillance System (BRFSS) and the National Health and Nutrition Examination Survey (NHANES) [@cdcdata].
 
 ## Limitations
 
 The CDC is a reputable government-associated organization but the data did not come without inherent limitations. As with any telephone survey, respondents are susceptible to lying which would represent false data points. In addition, even if respondents believe they are telling the truth, it is possible that they do not have an accurate measurement of, for example, their activity level. There is no information available about the  methods used to validate this information on the CDC website. 
 
-The data used in this paper does not represent the full dataset, as data points had to be removed for any missing responses. The previously more robust dataset with 93250 data points was reduced to 10218 in this process. The categories available for both the respondent variables do not allow for some details, as the markers for physical activity were very specific. Many individuals may not adhere directly to the possible responses in the survey, and it is impossible to account for individuals who perform more physiccal activity than the provided options. The income levels also do not provide a broad perspective, with the maximum level being $75,000+. There is no evidence or rationale provided regarding why these options were chosen.
+The data used in this paper does not represent the full dataset, as data points had to be removed for any missing responses. The previously more robust dataset with 93250 data points was reduced to 10218 in this process. The categories available for both the respondent variables do not allow for some details, as the markers for physical activity were very specific. Many individuals may not adhere directly to the possible responses in the survey, and it is impossible to account for individuals who perform more physical activity than the provided options. The income levels also do not provide a broad perspective, with the maximum level being $75,000+. There is no evidence or rationale provided regarding why these options were chosen.
 
 ## Variables of Interest
 
@@ -128,11 +124,11 @@ ggplot(activity_data, aes(x = income)) +
 
 ```
 
-@fig-activity tells us that 4-year degree graduates are the most well represented in the polls, followed by high school graduates, people with some college, and then 2-year degree graduates. People who have not graduated high school are hardly represented at all.
+@fig-activity tells us that Americans who do not perform any leisurely exercise are the most well represented, with all other groups having an equal number of points in this data. 
 
-In @fig-income we see 45-64 being the most dominant age group, with much less representation in the 18-29 range. Also, about 20% more females participated in the study than males. 
+In @fig-income, oddly enough every income level was equally represented in this study.
 
-Below are some figures representing who people voted for based on their age and gender, followed by education level and gender.
+Below are some figures representing the proportion of people who were considered obese based on their activity level and their wealth.
 
 ```{r out.height="20%"}
 #| label: fig-activityobesity
@@ -148,7 +144,8 @@ ggplot(activity_data, aes(x = activity, fill = obese)) +
   theme_minimal() +
   labs(title = "Obesity Proportion by Activity Levels", x = "Activity Level", y = "Proportion")
 ```
-@fig-activityobesity shows a negative correlation between votes for Joe Biden and older age groups.
+@fig-activityobesity shows no correlation between obesity and activity level. The proportion of people with obesity doing moderate cardio is unexpected.
+
 ```{r out.height="20%"}
 #| label: fig-incomeobesity
 #| fig-cap: "Prevalence of obesity by income level"
@@ -161,7 +158,8 @@ ggplot(activity_data, aes(x = income, fill = obese)) +
   theme_minimal() +
   labs(title = "Obesity Proportion by Income Brackets", x = "Age Group", y = "Proportion")
 ```
-We can see that in @fig-gendervotes, more women voted for Joe Biden than men. 
+We can see that in @fig-incomeobesity, obesity tended to trend down with higher levels of income.
+\newpage
 
 # Model
 
@@ -192,6 +190,7 @@ The logistic regression model is defined as:
 \log\left(\frac{P(Y_i=1)}{1 - P(Y_i=1)}\right) = \beta_0 + \beta_1X_{\text{activity},i} + \beta_2X_{\text{income},i}
 \]
 ```
+
 ## Model set-up
 
 - $Y_i$ is the binary indicator of having a BMI of 30 or above (1) versus a BMI below 30 for respondent $i$.
@@ -204,7 +203,7 @@ I fit my logistic regression model to the data using 'stan_glm()' function from 
 
 After creating the model, we can examine the summary in @fig-summary:
 
-```{r}
+```{r out.height="20%"}
 #| label: fig-summary
 #| fig-cap: "Model summary"
 #| echo: false
@@ -215,13 +214,37 @@ obesity_likelihood <- readRDS(file ="../models/obesity_likelihood.rds")
 modelsummary(obesity_likelihood)
 ```
 
-In order to better interpret the results of the model, I can create a coefficient plot to visually see the effect sizes of the predictor variables on the likelihood of an individual supporting Biden. 
+#### Summary Interpretation
 
-@fig-coefficient maps each predictor variable on the y-axis to an effect size and confidence interval on the x-axis. The effect size is the change in log-odds of supporting Biden for a one-unit increase in the predictor variable, which is essentially how much impact each demographic characterstic has an effect on voting for Biden. 
+Each coefficient in a logistic regression model quantifies the change in the log odds of the outcome per unit change in the predictor. In this context, with the probability of being obese as the outcome:
 
-The confidence intervals tell us the range within we can be confident that the true effect lies. Smaller confidence intervals means there is a higher level of precision in the estimate of the effect size. I am not as interested in the intervals that cross zero because that means that there is data to support each side (Biden or Trump) and so they are less statistically significant. 
+(Intercept) (5.329): When all other variables are at their baseline levels (no physical activity and the lowest income category), the log odds of being obese are 5.329.
 
+activityCardio + Strength (-8.164): Engaging in both cardio and strength activities is associated with an 8.164 unit decrease in the log odds of being obese compared to the baseline of no activity.
 
+activityDouble Cardio (-4.518): Doing 300 minutes of moderate cardio or 150 minutes of vigorous cardio results in a 4.518 unit decrease in the log odds of being obese compared to the baseline.
+
+activityNo Activity (-5.269): Having no leisure-time physical activity is associated with a 5.269 unit decrease in the log odds of being obese compared to the baseline. This negative value is unexpected, as we would typically predict no activity to increase the odds of obesity unless the baseline includes negative health behaviors even more associated with obesity.
+
+activityStrength (-5.092): Engaging only in strength training activities is associated with a 5.092 unit decrease in the log odds of being obese compared to the baseline.
+
+income15-25 (0.096): Being in the \$15,000 to $25,000 income bracket is associated with a 0.096 unit increase in the log odds of being obese compared to the reference income category.
+
+income25-35 (-0.719): Being in the \$25,000 to $35,000 income bracket is associated with a 0.719 unit decrease in the log odds of being obese.
+
+income35-50 (-0.990): Being in the \$35,000 to $50,000 income bracket is associated with a 0.990 unit decrease in the log odds of being obese.
+
+income50-75 (-1.063): Being in the \$50,000 to $75,000 income bracket is associated with a 1.063 unit decrease in the log odds of being obese.
+
+income75+ (-0.401): Being in the over $75,000 income bracket is associated with a 0.401 unit decrease in the log odds of being obese.
+
+It is important to note that these are all associative relationships and don't imply causation.
+
+In order to better interpret the results of the model, I can create a coefficient plot to visually see the effect sizes of the predictor variables on the likelihood of an individual being obese. 
+
+@fig-coefficient maps each predictor variable on the y-axis to an effect size and confidence interval on the x-axis. The effect size is the change in log-odds of being obese for a one-unit increase in the predictor variable, which is essentially how much impact each variable has an effect on being obese
+
+The confidence intervals tell us the range within we can be confident that the true effect lies. Smaller confidence intervals means there is a higher level of precision in the estimate of the effect size. I am not as interested in the intervals that cross zero because that means that there is data to support each side (obese and not obese) and so they are less statistically significant. 
 
 
 ```{r}
@@ -253,12 +276,12 @@ tidy_obesity_likelihood <- broom::tidy(obesity_likelihood)
 names(tidy_obesity_likelihood)
 ```
 
-The conclusions I can draw from @fig-coefficient align with what I expected given the dataset. It's clear that higher education levels, specifically 4-year degrees and post-grad degrees, are positively associated with support for Biden. Higher age groups, specifically 45-64 and 65+, are strongly tied to voting for Trump. Men are less likely to vote for Biden than Women. 
+The conclusions I can draw from @fig-coefficient align with what I expected given the dataset. We can see that generally, higher incomes trend with a lower log-likelihood of being obese. The conclusions drawn from the activity levels also are in line with what we saw earlier on @fig-activity, though they are not at all what I expected as I believed exercise to have a negative correlation with obesity. I did not expect that the (Intercept) no 
 
 \newpage
 # Results
 
-Figures @fig-page, @fig-pgender, and @fig-pedu are recreations of the earlier graphs we saw showcasing the proportion of voters for Joe Biden by groups within each demographic, where the bar is the data from CCES 2020 while the point is the prediction generated by the model. 
+Figures @fig-pactivity and @fig-pobesity, are recreations of the earlier graphs we saw showcasing the proportion of obesity by groups within categories, where the bar is the data from CDC while the point is the prediction generated by the model. 
 
 ```{r out.height="25%"}
 #| label: fig-pactivity
@@ -327,16 +350,25 @@ ggplot() +
 
 ```
 
-
-
-By observation, it is evident that the model's prediction was fairly close to what the CCES data showed. The trend remains the same for each result. However, gender and education were predicted to have a higher sentiment of voting for Joe Biden while age had a lower sentiment. 
-
-It is worth nothing though that in @fig-pactivity, all age categories showed polling data of above 50% to vote for Biden. Now with the lower average vote, the older age categories of "45-64" and "65+" are leaning towards Trump. On @fig-pobesity for the lower education groups, the "No-HS" group which was at just about 50% is now above it, and the "High School Graduate" is also closer to voting for Biden. While this may seem marginal, close elections where voter sentiment is close to 50% would be largely impacted by changes like this. Although ultimately this is not an accurate predictor for who would win the election, only which groups would vote for who.
+We can see that the model prediction resembled the CDC data by trend, however for most of the categories within both @fig-pactivity and @fig-pobesity, the prediction for obesity was lower than the data suggested. Moderate cardio having such a high proportion of obesity as unexpected.
 
 # Discussion
 
+In this paper, we used real-world statistics on Americans' activity levels, income, and whether or not they were considered obese to find a correlation between these behavioural and socioeconomic factors and obesity. What we found was that contrary to popular belief, our model did not predict lower obesity levels for individuals who exercised more. In particular, there was a large proportion of individuals who did moderate cardio and were obese, but there was correlation with lower obesity and strength training. Generally, higher income levels were also associated with lower rates of obesity. 
+
+While this data may not be indicative of reality, the lack of correlation between exercise and obesity may reveal truths about societal beliefs in terms of how to get fit. Like myself, many Americans grew up watching TV where commercial ad breaks would feature fad diets, fast 10 minute work outs, and buzz phrases like "do this for 30 minutes a week to lose X lbs of fat!" Fitness may be viewed with a dogmatic stigma due to media portrayals which push the idea of a 'hardcore' lifestyle being required for a fit body. 
+
+Due to this, it is possible that individuals believe in exercise being a greater factor for fat loss than nutrition. With the highest category of 300 minutes of moderate cardio used in CDC's survey, an adult weighing 160 lbs can expect to burn approximately 1825 calories in a week [@mayoclinic]. As a single pound of body fat contains roughly 3500 calories, this would seem like half a pound of fat loss per week. However, this does not account for the possibility that an individual consumes more food with added physical activity, and 1825 calories spread out over a week is obly 260 calories per day. That equates to less than a small fries at McDonalds, or 2 or 3 eggs with oil. 
+
+It is impossible to predict how an individual's body composition will change without knowing their nutritional information, specifically their caloric intake. There are various reasons why higher incomes might trend with lower obesity rates. People with higher incomes also tend to have achieved higher levels of education, which may be tied to access of information. They also have more access to help from professionals, better training facilities, and more food options. The study "Nutrition quality of food purchases varies by household income: the SHoPPER study" published in BMC Public Health highlights that lower-income households tend to purchase foods of lower nutritional quality compared to higher-income households. This is due to financial constraints limiting the purchase of healthier options like fruits and vegetables, leading to a higher purchase of less healthful foods such as frozen desserts or fast food. The study emphasizes that food purchasing patterns significantly mediate income differences in dietary intake quality [@nutritionquality]. 
+
 
 # Weaknesses and Next Steps
+As outlined previously, the data points were self reported which could lead to false data due to dishonesty or lack of care in measurement. The dataset was also filtered to remove incomplete datapoints, resulting in almost 90% of the initial dataset being removed. The discrete categories used for both physical activity and income may oversimplify the spectrum of exercise habits which overlooks the nuances of individual physical activity patterns. The income cap at $75,000 also fails to show variations in prevalence of obesity in higher income brackets. 
+
+Future research should aim to incorporate objective measures of physical activity, perhaps through wearable technology, to diminish self-reporting biases. A broader dataset, possibly integrating direct measures of physical activity and detailed nutritional intake, would enable a more comprehensive analysis. Investigating the impact of higher income brackets beyond $75,000 and accounting for regional cost-of-living differences could refine understanding of the income-obesity relationship. Additionally, longitudinal data could shed light on the temporal dynamics between exercise habits and BMI changes over time.
+
+Further, integrating geospatial analyses to assess environmental factors, such as access to recreational spaces and healthy food outlets, could add further context to obesity determinants. Given the multifaceted nature of obesity, interdisciplinary studies combining data from healthcare, urban planning, and social sciences could offer more holistic insights.
 \newpage
 
 # References

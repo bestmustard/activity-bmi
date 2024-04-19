@@ -282,6 +282,214 @@ income75+ (-0.401): Being in the over $75,000 income bracket is associated with 
 Num.Obs. (3000): This is not a coefficient but rather the number of observations in the dataset.
 These coefficients are in the log-odds scale because logistic regression predicts the log-odds of the probability of the occurrence of an event. To translate these into probabilities, you would use the logistic function to convert the log-odds into odds, and then convert the odds into probabilities. It's also important to note that these are all associative relationships and don't imply causation.
 
+User
+Give me a BibTex citation and explanation on how poorer Americans are more likely to eat fast food
+GPT
+The study "Nutrition quality of food purchases varies by household income: the SHoPPER study" published in BMC Public Health highlights that lower-income households tend to purchase foods of lower nutritional quality compared to higher-income households. This is due to financial constraints limiting the purchase of healthier options like fruits and vegetables, leading to a higher purchase of less healthful foods such as frozen desserts. The study emphasizes that food purchasing patterns significantly mediate income differences in dietary intake quality.
+
+Here is how you can cite this study:
+
+bibtex
+Copy code
+@article{French2019NutritionQuality,
+  title={Nutrition quality of food purchases varies by household income: the SHoPPER study},
+  author={French, Simone A. and Tangney, Christy C. and Crane, Melissa M. and Wang, Yamin and Appelhans, Bradley M.},
+  journal={BMC Public Health},
+  volume={19},
+  number={231},
+  year={2019},
+  publisher={BioMed Central}
+}
+For more details, visit the BMC Public Health article.
+
+
+
+Write a few R tests that load and test the data from the files that are written to by this file:
+#### Preamble ####
+# Purpose: Cleans the physical activity and obesity data from CDC
+# Author: Victor Ma
+# Date: 19 Apr 2024
+# Contact: victo.ma@mail.utoronto.ca
+
+#### Workspace setup ####
+library(tidyverse)
+library(dplyr)
+library(arrow)
+
+#### Clean data ####
+raw_data <-
+  read_csv("inputs/data/raw_data/Nutrition__Physical_Activity__and_Obesity_-_Behavioral_Risk_Factor_Surveillance_System.csv")
+
+unique(raw_data$Topic)
+
+cleaned_data <- 
+  raw_data |> 
+  select ("Topic", "Question", "BMI", "Income") |>
+  filter(Topic == "Physical Activity - Behavior") |>
+  mutate(
+    obese = if_else(BMI >= 30, "Yes", "No"),
+    obese = as_factor(obese),
+    activity = case_when(
+      Question == "Percent of adults who engage in no leisure-time physical activity" ~ "No Activity",
+      Question == "Percent of adults who engage in muscle-strengthening activities on 2 or more days a week" ~ "Strength",
+      Question == "Percent of adults who achieve at least 150 minutes a week of moderate-intensity aerobic physical activity or 75 minutes a week of vigorous-intensity aerobic activity (or an equivalent combination)" ~ "Cardio",
+      Question == "Percent of adults who achieve at least 150 minutes a week of moderate-intensity aerobic physical activity or 75 minutes a week of vigorous-intensity aerobic physical activity and engage in muscle-strengthening activities on 2 or more days a week" ~ "Cardio + Strength",
+      Question == "Percent of adults who achieve at least 300 minutes a week of moderate-intensity aerobic physical activity or 150 minutes a week of vigorous-intensity aerobic activity (or an equivalent combination)" ~ "Double Cardio"
+    ), 
+    activity = factor(
+      activity,
+      levels = c("No Activity", "Strength", "Cardio", "Cardio + Strength", "Double Cardio")
+    ),
+    activity=as_factor()
+    income = case_when(
+      Income == "Less than $15,000" ~ "0-15", 
+      Income == "$15,000 - $24,999" ~ "15-25", 
+      Income == "$25,000 - $34,999" ~ "25-35", 
+      Income == "$35,000 - $49,999" ~ "35-50", 
+      Income == "$50,000 - $74,999" ~ "50-75", 
+      Income =="$75,000 or greater" ~ "75+"
+    ),
+    income= factor(
+      income,
+      levels = c("0-15", "15-25", "25-35", "35-50", "50-75", "75+")
+    )
+  ) |>
+  select(obese, activity, income) |>
+  filter(income != "Data not reported") %>% drop_na()
+
+
+
+#### Save the data ####
+write_csv(cleaned_data, "inputs/data/analysis_data/analysis_data.csv")
+
+write_parquet(cleaned_data, "inputs/data/analysis_data/analysis_data.parquet")
+GPT
+Here are a few R tests that load and test the data from the files written by the script. These tests use the testthat library to ensure the data integrity and expected transformations.
+
+r
+Copy code
+library(testthat)
+library(arrow)
+library(readr)
+
+test_that("Data files exist", {
+  expect_true(file.exists("inputs/data/analysis_data/analysis_data.csv"))
+  expect_true(file.exists("inputs/data/analysis_data/analysis_data.parquet"))
+})
+
+test_that("Columns are correctly formatted in CSV", {
+  data <- read_csv("inputs/data/analysis_data/analysis_data.csv")
+  
+  # Test if all required columns exist
+  expect_true(all(c("obese", "activity", "income") %in% colnames(data)))
+  
+  # Test factor levels
+  expect_equal(levels(data$activity), c("No Activity", "Strength", "Cardio", "Cardio + Strength", "Double Cardio"))
+  expect_equal(levels(data$income), c("0-15", "15-25", "25-35", "35-50", "50-75", "75+"))
+  
+  # Test for absence of NA in key columns
+  expect_equal(sum(is.na(data$obese)), 0)
+  expect_equal(sum(is.na(data$activity)), 0)
+  expect_equal(sum(is.na(data$income)), 0)
+})
+
+test_that("Data integrity is maintained in Parquet format", {
+  data_parquet <- read_parquet("inputs/data/analysis_data/analysis_data.parquet")
+  
+  # Test if all required columns exist
+  expect_true(all(c("obese", "activity", "income") %in% colnames(data_parquet)))
+  
+  # Test the structure is the same as CSV
+  data_csv <- read_csv("inputs/data/analysis_data/analysis_data.csv")
+  expect_equal(dim(data_parquet), dim(data_csv))
+  
+  # Test for correct data types
+  expect_true(is.factor(data_parquet$activity))
+  expect_true(is.factor(data_parquet$income))
+})
+
+# Run the tests
+test_file("your_test_script.R")
+Make sure to have the testthat package installed and loaded in your R environment. Also, adjust the file paths accordingly if they differ. This script ensures that the files exist, checks that the necessary columns are present and correctly formatted, and verifies the integrity of the data across both the CSV and Parquet file formats.
+
+User
+Make them more extensive
+GPT
+To enhance the R tests and ensure comprehensive validation of the data, consider expanding the testing scope to include the following additional checks:
+
+Check for Unique Entries: Verify that the dataset does not contain duplicate rows, ensuring data integrity.
+Validate Data Range: For numerical columns such as BMI, ensure that the values fall within a reasonable and expected range.
+Factor Level Checks: Beyond checking for the existence of factor levels, verify that the distribution of data across these levels is as expected, i.e., no single category disproportionately dominates.
+Test for Missing Values: Extend the checks for NAs to ensure no columns have missing values that could impact analysis.
+Comparative Analysis between CSV and Parquet: Ensure that not only the dimensions match between the two formats but also that the content within is identical.
+File Size Validation: Ensure that the files are not empty or unusually small, indicating a potential issue in the data saving process.
+These tests provide a more robust framework for ensuring the data's quality and integrity, crucial for reliable analysis outcomes.
+
+User
+Write the code but do not use libraries like testthat
+GPT
+To perform more extensive testing without using external libraries like testthat, you can directly use R's base functions and control structures. Here’s how you could expand the tests:
+
+r
+Copy code
+# Check if files exist
+if (!file.exists("inputs/data/analysis_data/analysis_data.csv")) {
+  stop("CSV file does not exist.")
+}
+
+if (!file.exists("inputs/data/analysis_data/analysis_data.parquet")) {
+  stop("Parquet file does not exist.")
+}
+
+# Load data
+csv_data <- read.csv("inputs/data/analysis_data/analysis_data.csv")
+parquet_data <- arrow::read_parquet("inputs/data/analysis_data/analysis_data.parquet")
+
+# Check columns
+required_columns <- c("obese", "activity", "income")
+if (!all(required_columns %in% names(csv_data))) {
+  stop("One or more required columns are missing in the CSV data.")
+}
+
+if (!all(required_columns %in% names(parquet_data))) {
+  stop("One or more required columns are missing in the Parquet data.")
+}
+
+# Check for duplicates
+if (any(duplicated(csv_data))) {
+  stop("There are duplicate rows in the CSV data.")
+}
+
+if (any(duplicated(parquet_data))) {
+  stop("There are duplicate rows in the Parquet data.")
+}
+
+# Validate data range for a hypothetical numeric column (if exists)
+# assuming 'BMI' is a numeric column for demonstration
+if (any(csv_data$BMI < 10 | csv_data$BMI > 50, na.rm = TRUE)) {
+  stop("BMI values out of expected range [10, 50] in CSV data.")
+}
+
+# Check factor levels
+expected_activity_levels <- c("No Activity", "Strength", "Cardio", "Cardio + Strength", "Double Cardio")
+if (!all(levels(csv_data$activity) == expected_activity_levels)) {
+  stop("Activity levels in CSV data do not match expected levels.")
+}
+
+# Check for missing values
+if (any(is.na(csv_data))) {
+  stop("There are missing values in the CSV data.")
+}
+
+# Ensure CSV and Parquet data are identical
+if (!identical(csv_data, as.data.frame(parquet_data))) {
+  stop("CSV and Parquet data files do not contain identical data.")
+}
+
+# Print a success message if all tests pass
+cat("All tests passed successfully.\n")
+This script comprehensively validates the existence of files, column integrity, uniqueness of entries, data ranges, and consistency across file formats, among other checks. Note that since this code doesn’t use testthat or similar libraries, it stops execution at the first error encountered. To perform all checks even if some fail, you could modify the script to collect errors in a vector and report them at the end.
+
 
 
 
